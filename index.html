@@ -1,0 +1,189 @@
+<!doctype html>
+
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<title>CodeMirror variables mode</title>
+		<link
+			rel="stylesheet"
+			href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.61.1/codemirror.min.css"
+			integrity="sha512-xIf9AdJauwKIVtrVRZ0i4nHP61Ogx9fSRAkCLecmE2dL/U8ioWpDvFCAy4dcfecN72HHB9+7FfQj3aiO68aaaw=="
+			crossorigin="anonymous"
+			referrerpolicy="no-referrer" />
+		<style>
+			.CodeMirror {
+				border-top: 1px solid black;
+				border-bottom: 1px solid black;
+				height: 100%;
+			}
+		</style>
+	</head>
+	<body>
+		<h1>CodeMirror variables mode</h1>
+		<p>
+			This is a <a href="https://codemirror.net/">CodeMirror</a> mode that brings
+			syntax highlighting for variables in strings.
+		</p>
+		<p>
+			<strong>MIME types defined:</strong>
+			<ul>
+				<li>text/x-variables</li>
+			</ul>
+		</p>
+		<p>
+			<strong>Options:</strong>
+			<ul>
+				<li>base_token: string: token returned outside variables; default: 'string'</li>
+				<li>escape_sequences: string, RegExp or null: possible escape sequences; default: '\\$'</li>
+				<li>escape_token: string: token returned when spotting escaped characters; default: 'string'</li>
+				<li>
+					variable_patterns: array of objects: possible variable patterns:
+					<ul>
+						<li>prefix: string or RegExp: prefix used to spot variables; mandatory; example: '${'</li>
+						<li>name: RegExp: pattern for acceptable variables names; mandatory; example: /\w+/</li>
+						<li>suffix: string or RegExp: suffix matching the prefix; optional; example: '}'</li>
+						<li>prefix_token: string: token returned for prefixes; optional; default: 'string strong'</li>
+						<li>name_token: string: token returned for names; optional; default: 'variable-2'</li>
+						<li>suffix_token: string: token returned for suffixes; optional; default: 'string strong'</li>
+						<li>error_token: string: token returned for errors; optional; default: 'error'</li>
+					</ul>
+					Patterns must be ordered based on their prefix, e.g. '${' before '$'.
+				</li>
+			</ul>
+		</p>
+		<h2 id="h2direct">Direct use</h2>
+		By default, codemirror-mode-variables supports $-prefixed variables with optional braces, e.g. $foo or ${bar}:
+		<textarea id="direct">$scheme://$host/somewhere/else/${tail}${is_args}${args}</textarea>
+		<h2 id="h2custom">Custom variable patterns</h2>
+		<p>Braces:</p>
+		<textarea id="custom0">{scheme}://{host}/somewhere/else/{tail}{is_args}{args}</textarea>
+		<p>Brackets:</p>
+		<textarea id="custom1">[scheme]://[host]/somewhere/else/[tail][is_args][args]</textarea>
+		<p>Apache-style:</p>
+		<textarea id="custom2">
+abc$1def%2ghi${mapname:key|default}
+abc%{SERVER_NAME}def%{ENV:variable}ghi%{SSL:SSL_CIPHER_USEKEYSIZE}
+abc%{HTTP:Proxy-Connection}def%{LA-U:REMOTE_USER}ghi%{LA-F:REMOTE_USER}</textarea>
+		<p>printf-style:</p>
+		<textarea id="custom3">
+abc%5dghi
+abc%-5dghi
+abc%05dghi
+abc%+5dghi
+abc%-+5dghi</textarea>
+		<h2 id="h2nested">Use as nested mode</h2>
+		<p>
+			Below is a demonstration of how the variables mode can be used to highlight variables within other languages (here, nginx).
+		</p>
+		<textarea id="nested">
+server {
+	location ~ "(?x) # Enable PCRE extended mode
+		^
+		/user
+		/(?<action>login|logout|profile) # Also include 'profile' because...
+		/(?<tail>.*)
+	"
+	{
+		if ($tail ~ "^(some|[^/]+/really|compl(?:ex|icated)|stuff|t?here)$") {
+			return 307 "${scheme}://${host}/somewhere/else/${tail}${is_args}${args}";
+		}
+		# ...
+	}
+}</textarea>
+		
+		<script
+			src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.61.1/codemirror.min.js" 
+			integrity="sha512-ZTpbCvmiv7Zt4rK0ltotRJVRaSBKFQHQTrwfs6DoYlBYzO1MA6Oz2WguC+LkV8pGiHraYLEpo7Paa+hoVbCfKw=="
+			crossorigin="anonymous"
+			referrerpolicy="no-referrer">
+		</script>
+		<script src="src/variables.js"></script>
+		<script>
+			CodeMirror.defineMode('nginx-mini+variables', function(options) {
+				var variables_mode = CodeMirror.getMode({mode: {extended: false}}, {name: 'variables'});
+				return {
+					startState: function() {
+						return {
+							current: '',
+							variables_state: CodeMirror.startState(variables_mode),
+							expect_regex: false, // whether the next string should be a regex
+						};
+					},
+					copyState: function(os) { // os = original state
+						return {
+							current: os.current,
+							variables_state: CodeMirror.copyState(variables_mode, os.variables_state),
+							expect_regex: os.expect_regex,
+						};
+					},
+					token: function(stream, state) {
+						if (state.current === 'string' || state.current === 'regex') {
+							if (stream.eat('"')) {
+								state.current = '';
+								return 'string';
+							}
+							if (state.current !== 'regex') return variables_mode.token(stream, state.variables_state);
+							if (!stream.match('\\"')) stream.next();
+							return 'string';
+						}
+						var operator = stream.match(/(=|~|~\*|\^~)/);
+						if (operator) {
+							state.expect_regex = operator[1][0] === '~'; // ~ and ~* imply a regex
+							return 'operator';
+						}
+						if (stream.eat('"')) {
+							state.current = state.expect_regex ? 'regex' : 'string';
+							if (state.expect_regex) state.variables_state = CodeMirror.startState(variables_mode);
+							state.expect_regex = false; // ^ new regex, new PCRE state object
+							return 'string';
+						}
+						/* Minimalistic nginx syntax highlighting, just for demonstration purposes: */
+						if (stream.eat('#')) {
+							stream.skipToEnd();
+							return 'comment';
+						}
+						if (stream.match(/\b(?:if|return|server|location)\b/)) return 'keyword';
+						if (stream.match(/\$\w+/)) return 'variable-3';
+						if (stream.match(/\d+/)) return 'number';
+						stream.next();
+						return state.current;
+					},
+				};
+			});
+		</script>
+		<script>
+			var mode = { name: 'variables' };
+			var conf = {
+				lineNumbers: true,
+				indentWithTabs: true,
+				showCursorWhenSelecting: true,
+				mode: mode,
+			};
+			CodeMirror.fromTextArea(document.getElementById('direct'), conf);
+
+			mode.escape_sequences = '\\{';
+			mode.variable_patterns = [{'prefix': '{', 'suffix': '}', 'name': /\w+/ }];
+			CodeMirror.fromTextArea(document.getElementById('custom0'), conf);
+
+			mode.escape_sequences = '\\[';
+			mode.variable_patterns = [{'prefix': '[', 'suffix': ']', 'name': /\w+/ }];
+			CodeMirror.fromTextArea(document.getElementById('custom1'), conf);
+
+			// Based on https://httpd.apache.org/docs/2.4/mod/mod_rewrite.html :
+			mode.escape_sequences = /\\[%$]/;
+			mode.variable_patterns = [];
+			mode.variable_patterns.push({prefix: '${', suffix: '}', name: /\w+:\w+(?:\|[^}]*)?/ });
+			mode.variable_patterns.push({prefix: '%{', suffix: '}', name: /(?:(?:ENV|SSL|HTTP|LA-[FU]):[\w-]+|[A-Z0-9_]+)/ });
+			mode.variable_patterns.push({prefix: /[$%]/, name: /\d/, prefix_token: 'variable-2 strong', name_token: 'variable-2 strong'});
+			CodeMirror.fromTextArea(document.getElementById('custom2'), conf);
+
+			// Based on https://alvinalexander.com/programming/printf-format-cheat-sheet/ :
+			mode.escape_sequences = /[\\%]%/;
+			mode.variable_patterns = [{prefix: '%', prefix_token: 'variable-2 strong', name_token: 'variable-2 strong', name: /-?\+?\d*[cdefiosux]/ }];
+			CodeMirror.fromTextArea(document.getElementById('custom3'), conf);
+
+			conf.mode = {name: 'nginx-mini+variables'};
+			CodeMirror.fromTextArea(document.getElementById('nested'), conf);
+		</script>
+	</body>
+</html>
