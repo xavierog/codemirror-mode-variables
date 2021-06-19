@@ -1,6 +1,6 @@
 {
   "name": "codemirror-mode-variables",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "variables mode for CodeMirror",
   "main": "src/variables.js",
   "scripts": {
@@ -12,8 +12,7 @@
   },
   "keywords": [
     "codemirror-mode",
-    "variables",
-    "variables-regex"
+    "variables"
   ],
   "author": "Xavier G.",
   "license": "BSD-3-Clause",
