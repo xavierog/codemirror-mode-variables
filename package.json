@@ -1,0 +1,24 @@
+{
+  "name": "codemirror-mode-variables",
+  "version": "1.0.0",
+  "description": "variables mode for CodeMirror",
+  "main": "src/variables.js",
+  "scripts": {
+    "test": "true"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/xavierog/codemirror-mode-variables.git"
+  },
+  "keywords": [
+    "codemirror-mode",
+    "variables",
+    "variables-regex"
+  ],
+  "author": "Xavier G.",
+  "license": "BSD-3-Clause",
+  "bugs": {
+    "url": "https://github.com/xavierog/codemirror-mode-variables/issues"
+  },
+  "homepage": "https://github.com/xavierog/codemirror-mode-variables#readme"
+}
