@@ -35,7 +35,11 @@ CodeMirror.defineMode('variables', function(editor_options) {
 		return default_tokens[token_type];
 	}
 	function consume(stream, state, return_token) {
-		stream.next();
+		// Our main use case is being a nested mode. As such, we should not
+		// consume too much as it is up to the nesting mode to decide what this
+		// mode should tokenize. That said, consuming \w is not expected to
+		// hurt:
+		if (!stream.match(/\w+/)) stream.next();
 		return token(state, return_token);
 	}
 
