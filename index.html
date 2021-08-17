@@ -99,8 +99,8 @@ server {
 		</script>
 		<script src="src/variables.js"></script>
 		<script>
-			CodeMirror.defineMode('nginx-mini+variables', function(options) {
-				var variables_mode = CodeMirror.getMode({mode: {extended: false}}, {name: 'variables'});
+			CodeMirror.defineMode('nginx-mini+variables', function(editor_options, mode_options) {
+				var variables_mode = CodeMirror.getMode(editor_options, {name: 'variables'});
 				return {
 					startState: function() {
 						return {

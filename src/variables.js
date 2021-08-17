@@ -1,4 +1,4 @@
-CodeMirror.defineMode('variables', function(editor_options) {
+CodeMirror.defineMode('variables', function(editor_options, mode_options) {
 	// Default settings:
 	var default_tokens = { // See DEFAULT THEME section in lib/codemirror.css
 		base: 'string',
@@ -15,11 +15,10 @@ CodeMirror.defineMode('variables', function(editor_options) {
 	];
 
 	// Override default settings with user-provided settings:
-	var options = typeof editor_options.mode === 'string' ? {} : editor_options.mode;
-	if (options.base_token) default_tokens.base = options.base_token;
-	if (options.escape_token) default_tokens.escape = options.escape_token;
-	if (options.escape_sequences) escape_sequences = options.escape_sequences;
-	if (options.variable_patterns) variable_patterns = options.variable_patterns;
+	if (mode_options.base_token) default_tokens.base = mode_options.base_token;
+	if (mode_options.escape_token) default_tokens.escape = mode_options.escape_token;
+	if (mode_options.escape_sequences) escape_sequences = mode_options.escape_sequences;
+	if (mode_options.variable_patterns) variable_patterns = mode_options.variable_patterns;
 
 	// Helper functions:
 	function current_pattern(state) {
