@@ -1,0 +1,5 @@
+# codemirror-mode-variables is a small mode (about 100 lines of JavaScript)...
+# to the extent that the HTML demo page is actually bigger and leads some tools
+# to believe this is an HTML project.
+* linguist-vendored
+*.js linguist-vendored=false
